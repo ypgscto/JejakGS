@@ -138,14 +138,10 @@ class AlumniProfile {
   bool get isComplete {
     return nim.trim().isNotEmpty &&
         name.trim().isNotEmpty &&
-        programStudy.trim().isNotEmpty &&
         batchYear > 0 &&
         graduationYear > 0 &&
-        _hasValue(email) &&
-        _hasValue(phoneNumber) &&
-        _hasValue(city) &&
-        (_hasValue(employmentStatus) || _hasValue(jobTitle)) &&
-        _hasValue(institution);
+        _hasValue(avatarUrl) &&
+        _hasValue(diplomaPhotoUrl);
   }
 
   factory AlumniProfile.fromJson(Object? value) {

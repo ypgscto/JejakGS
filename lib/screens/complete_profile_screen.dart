@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../core/constants/app_colors.dart';
 import '../core/constants/app_spacing.dart';
@@ -16,12 +17,15 @@ class CompleteProfileScreen extends StatefulWidget {
 }
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _cityController = TextEditingController();
-  final _jobController = TextEditingController();
-  final _institutionController = TextEditingController();
+  final _nimController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _cohortYearController = TextEditingController();
+  final _graduationYearController = TextEditingController();
+  final _imagePicker = ImagePicker();
+  XFile? _diplomaPhoto;
+  XFile? _profilePhoto;
   String? _validationMessage;
+  String? _successMessage;
 
   @override
   void initState() {
@@ -39,11 +43,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _phoneController.dispose();
-    _cityController.dispose();
-    _jobController.dispose();
-    _institutionController.dispose();
+    _nimController.dispose();
+    _nameController.dispose();
+    _cohortYearController.dispose();
+    _graduationYearController.dispose();
     super.dispose();
   }
 
@@ -59,7 +62,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             AppHeader(
               title: 'Lengkapi Profil',
               subtitle:
-                  'Lengkapi data profil pribadi agar akun alumni dapat diproses dari SIMAWA-GS.',
+                  'Kirim data alumni dan berkas pendukung agar admin SIMAWA-GS dapat melakukan verifikasi manual.',
               leadingIcon: Icons.assignment_ind_rounded,
             ),
             if (profile != null) ...[
@@ -74,40 +77,58 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             ],
             const SizedBox(height: AppSpacing.xxl),
             CustomTextField(
-              label: 'Email',
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icons.email_rounded,
+              label: 'NIM',
+              controller: _nimController,
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.badge_rounded,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: AppSpacing.lg),
             CustomTextField(
-              label: 'Nomor HP',
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              prefixIcon: Icons.phone_rounded,
+              label: 'Nama Alumni',
+              controller: _nameController,
+              prefixIcon: Icons.person_rounded,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: AppSpacing.lg),
             CustomTextField(
-              label: 'Domisili Kota',
-              controller: _cityController,
-              prefixIcon: Icons.location_city_rounded,
+              label: 'Tahun Angkatan',
+              hintText: 'Contoh: 2019',
+              controller: _cohortYearController,
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.groups_rounded,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: AppSpacing.lg),
             CustomTextField(
-              label: 'Pekerjaan',
-              controller: _jobController,
-              prefixIcon: Icons.work_rounded,
+              label: 'Tahun Lulus',
+              hintText: 'Contoh: 2023',
+              controller: _graduationYearController,
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.school_rounded,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: AppSpacing.lg),
-            CustomTextField(
-              label: 'Instansi',
-              controller: _institutionController,
-              prefixIcon: Icons.apartment_rounded,
-              textInputAction: TextInputAction.done,
+            _FilePickerTile(
+              title: 'Foto Ijazah',
+              description:
+                  _diplomaPhoto?.name ??
+                  'Upload foto ijazah untuk verifikasi admin SIMAWA-GS.',
+              icon: Icons.description_rounded,
+              onPressed: widget.appState.isBusy
+                  ? null
+                  : () => _pickImage(isDiploma: true),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _FilePickerTile(
+              title: 'Foto Terbaru',
+              description:
+                  _profilePhoto?.name ??
+                  'Upload foto terbaru alumni untuk dicocokkan oleh admin.',
+              icon: Icons.photo_camera_rounded,
+              onPressed: widget.appState.isBusy
+                  ? null
+                  : () => _pickImage(isDiploma: false),
             ),
             if (_validationMessage != null ||
                 widget.appState.errorMessage != null)
@@ -121,10 +142,20 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   accentColor: AppColors.gold,
                 ),
               ),
+            if (_successMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.lg),
+                child: StatusCard(
+                  title: 'Pengajuan terkirim',
+                  description: _successMessage!,
+                  icon: Icons.check_circle_rounded,
+                  accentColor: AppColors.success,
+                ),
+              ),
             const SizedBox(height: AppSpacing.xxl),
             PrimaryButton(
-              label: 'Simpan Profil',
-              icon: Icons.save_rounded,
+              label: 'Kirim untuk Verifikasi',
+              icon: Icons.send_rounded,
               isLoading: widget.appState.isBusy,
               fullWidth: true,
               onPressed: _submit,
@@ -143,30 +174,169 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   void _fillFromProfile(AlumniProfile? profile) {
-    _emailController.text = profile?.email ?? '';
-    _phoneController.text = profile?.phoneNumber ?? '';
-    _cityController.text = profile?.city ?? '';
-    _jobController.text = profile?.jobTitle ?? '';
-    _institutionController.text = profile?.institution ?? '';
+    if (profile == null) {
+      _nimController.clear();
+      _nameController.clear();
+      _cohortYearController.clear();
+      _graduationYearController.clear();
+      return;
+    }
+
+    _nimController.text = profile.nim;
+    _nameController.text = profile.name;
+    _cohortYearController.text = profile.batchYear <= 0
+        ? ''
+        : profile.batchYear.toString();
+    _graduationYearController.text = profile.graduationYear <= 0
+        ? ''
+        : profile.graduationYear.toString();
+  }
+
+  Future<void> _pickImage({required bool isDiploma}) async {
+    final image = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 88,
+    );
+    if (image == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      if (isDiploma) {
+        _diplomaPhoto = image;
+      } else {
+        _profilePhoto = image;
+      }
+      _validationMessage = null;
+      _successMessage = null;
+    });
   }
 
   Future<void> _submit() async {
-    final payload = {
-      'contact_email': _emailController.text.trim(),
-      'contact_phone': _phoneController.text.trim(),
-      'work_location': _cityController.text.trim(),
-      'job_title': _jobController.text.trim(),
-      'company_name': _institutionController.text.trim(),
-    };
+    final nim = _nimController.text.trim();
+    final name = _nameController.text.trim();
+    final cohortYear = _cohortYearController.text.trim();
+    final graduationYear = _graduationYearController.text.trim();
 
-    if (payload.values.any((value) => value.isEmpty)) {
+    if ([nim, name, cohortYear, graduationYear].any((value) => value.isEmpty)) {
       setState(() {
         _validationMessage = 'Semua field wajib dilengkapi.';
+        _successMessage = null;
       });
       return;
     }
 
-    setState(() => _validationMessage = null);
-    await widget.appState.completeProfile(payload);
+    if (cohortYear.length != 4 || graduationYear.length != 4) {
+      setState(() {
+        _validationMessage = 'Tahun angkatan dan tahun lulus harus 4 digit.';
+        _successMessage = null;
+      });
+      return;
+    }
+
+    final diplomaPhoto = _diplomaPhoto;
+    final profilePhoto = _profilePhoto;
+    if (diplomaPhoto == null || profilePhoto == null) {
+      setState(() {
+        _validationMessage = 'Foto ijazah dan foto terbaru wajib diupload.';
+        _successMessage = null;
+      });
+      return;
+    }
+
+    final diplomaBytes = await diplomaPhoto.readAsBytes();
+    final profileBytes = await profilePhoto.readAsBytes();
+
+    setState(() {
+      _validationMessage = null;
+      _successMessage = null;
+    });
+    final success = await widget.appState.submitVerificationProfile(
+      fields: {
+        'source_type': 'siakad',
+        'nim': nim,
+        'name': name,
+        'cohort_year': cohortYear,
+        'graduation_year': graduationYear,
+      },
+      diplomaPhotoBytes: diplomaBytes,
+      diplomaPhotoFileName: diplomaPhoto.name,
+      profilePhotoBytes: profileBytes,
+      profilePhotoFileName: profilePhoto.name,
+    );
+    if (!mounted || !success) {
+      return;
+    }
+
+    setState(() {
+      _successMessage =
+          'Data dan berkas berhasil dikirim. Akun alumni akan aktif setelah diverifikasi admin SIMAWA-GS.';
+    });
+  }
+}
+
+class _FilePickerTile extends StatelessWidget {
+  const _FilePickerTile({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.mediumGrey),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.softGold,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: AppColors.maroon),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          TextButton.icon(
+            onPressed: onPressed,
+            icon: const Icon(Icons.upload_rounded),
+            label: const Text('Pilih'),
+          ),
+        ],
+      ),
+    );
   }
 }

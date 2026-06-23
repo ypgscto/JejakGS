@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _identifierController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _validationMessage;
+  String? _resendMessage;
 
   @override
   void dispose() {
@@ -106,6 +107,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 message: _validationMessage ?? widget.appState.errorMessage!,
               ),
             ),
+          if (_canResendVerification)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              child: TextButton.icon(
+                onPressed: widget.appState.isBusy
+                    ? null
+                    : _resendVerificationEmail,
+                icon: const Icon(Icons.mark_email_unread_rounded),
+                label: const Text('Kirim ulang email verifikasi'),
+              ),
+            ),
+          if (_resendMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.md),
+              child: _MessageBox(message: _resendMessage!, isSuccess: true),
+            ),
           const SizedBox(height: AppSpacing.xxl),
           PrimaryButton(
             label: 'Masuk',
@@ -146,8 +163,29 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _validationMessage = null);
+    setState(() {
+      _validationMessage = null;
+      _resendMessage = null;
+    });
     await widget.appState.login(identifier: identifier, password: password);
+  }
+
+  bool get _canResendVerification {
+    final message = widget.appState.errorMessage?.toLowerCase() ?? '';
+    return message.contains('email belum diverifikasi') &&
+        _identifierController.text.trim().contains('@');
+  }
+
+  Future<void> _resendVerificationEmail() async {
+    final email = _identifierController.text.trim().toLowerCase();
+    final success = await widget.appState.resendVerificationEmail(email);
+    if (!mounted || !success) {
+      return;
+    }
+
+    setState(() {
+      _resendMessage = 'Email verifikasi telah dikirim ulang ke $email.';
+    });
   }
 }
 
@@ -181,24 +219,31 @@ class _LoginMascot extends StatelessWidget {
 }
 
 class _MessageBox extends StatelessWidget {
-  const _MessageBox({required this.message});
+  const _MessageBox({required this.message, this.isSuccess = false});
 
   final String message;
+  final bool isSuccess;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.08),
+        color: (isSuccess ? AppColors.success : AppColors.danger).withValues(
+          alpha: 0.08,
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.danger.withValues(alpha: 0.18)),
+        border: Border.all(
+          color: (isSuccess ? AppColors.success : AppColors.danger).withValues(
+            alpha: 0.18,
+          ),
+        ),
       ),
       child: Text(
         message,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.danger),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          color: isSuccess ? AppColors.success : AppColors.danger,
+        ),
       ),
     );
   }

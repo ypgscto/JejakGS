@@ -37,20 +37,20 @@ class AuthService extends BaseSimawaService {
 
   Future<JsonMapResponse> registerAlumni({
     required String email,
+    required String name,
     required String password,
     required String passwordConfirmation,
     required String nim,
-    required String ssoPassword,
   }) async {
     final response = await api.post<Map<String, dynamic>>(
       '/auth/register-alumni',
       requiresAuth: false,
       body: {
         'email': email,
+        'name': name,
         'password': password,
         'password_confirmation': passwordConfirmation,
         'nim': nim,
-        'sso_password': ssoPassword,
         'device_name': 'JejakGS Web/Mobile',
       },
       decoder: asMapOrEmpty,
@@ -62,6 +62,15 @@ class AuthService extends BaseSimawaService {
     }
 
     return response;
+  }
+
+  Future<JsonMapResponse> resendVerificationEmail({required String email}) {
+    return api.post<Map<String, dynamic>>(
+      '/auth/resend-verification',
+      requiresAuth: false,
+      body: {'email': email},
+      decoder: asMapOrEmpty,
+    );
   }
 
   Future<JsonMapResponse> activate({

@@ -122,6 +122,7 @@ class SimawaApiClient implements ApiService {
     required String fileName,
     required List<int> bytes,
     String? contentType,
+    List<ApiMultipartFile>? additionalFiles,
     Map<String, String>? fields,
     bool requiresAuth = true,
     T Function(Object? json)? decoder,
@@ -142,6 +143,15 @@ class SimawaApiClient implements ApiService {
       request.files.add(
         http.MultipartFile.fromBytes(fieldName, bytes, filename: fileName),
       );
+      for (final file in additionalFiles ?? const <ApiMultipartFile>[]) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            file.fieldName,
+            file.bytes,
+            filename: file.fileName,
+          ),
+        );
+      }
 
       final streamed = await request.send().timeout(config.apiTimeout);
       final response = await http.Response.fromStream(streamed);

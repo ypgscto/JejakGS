@@ -16,19 +16,20 @@ class ActivationScreen extends StatefulWidget {
 
 class _ActivationScreenState extends State<ActivationScreen> {
   final _emailController = TextEditingController();
+  final _nameController = TextEditingController();
   final _nimController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmationController = TextEditingController();
-  final _ssoPasswordController = TextEditingController();
   String? _validationMessage;
+  String? _successMessage;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _nameController.dispose();
     _nimController.dispose();
     _passwordController.dispose();
     _passwordConfirmationController.dispose();
-    _ssoPasswordController.dispose();
     super.dispose();
   }
 
@@ -42,7 +43,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
             AppHeader(
               title: 'Register Alumni',
               subtitle:
-                  'Daftarkan email sebagai akun JejakGS. NIM dan password SSO digunakan untuk verifikasi data alumni SIAKAD-GS.',
+                  'Daftarkan email pribadi terbaru sebagai akun JejakGS. NIM digunakan untuk mencocokkan data alumni tanpa password SSO.',
               leadingIcon: Icons.verified_user_rounded,
             ),
             const SizedBox(height: AppSpacing.xxl),
@@ -52,6 +53,14 @@ class _ActivationScreenState extends State<ActivationScreen> {
               controller: _emailController,
               prefixIcon: Icons.email_rounded,
               keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            CustomTextField(
+              label: 'Nama Alumni',
+              hintText: 'Masukkan nama lengkap alumni',
+              controller: _nameController,
+              prefixIcon: Icons.person_rounded,
               textInputAction: TextInputAction.next,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -79,15 +88,6 @@ class _ActivationScreenState extends State<ActivationScreen> {
               controller: _nimController,
               prefixIcon: Icons.badge_rounded,
               keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.next,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            CustomTextField(
-              label: 'Password SSO SIAKAD',
-              hintText: 'Password SSO mahasiswa untuk verifikasi',
-              controller: _ssoPasswordController,
-              prefixIcon: Icons.verified_user_rounded,
-              obscureText: true,
               textInputAction: TextInputAction.done,
             ),
             if (_validationMessage != null ||
@@ -100,6 +100,16 @@ class _ActivationScreenState extends State<ActivationScreen> {
                       _validationMessage ?? widget.appState.errorMessage!,
                   icon: Icons.info_rounded,
                   accentColor: AppColors.gold,
+                ),
+              ),
+            if (_successMessage != null)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.lg),
+                child: StatusCard(
+                  title: 'Cek email verifikasi',
+                  description: _successMessage!,
+                  icon: Icons.mark_email_read_rounded,
+                  accentColor: AppColors.success,
                 ),
               ),
             const SizedBox(height: AppSpacing.xxl),
@@ -127,19 +137,20 @@ class _ActivationScreenState extends State<ActivationScreen> {
 
   Future<void> _submit() async {
     final email = _emailController.text.trim().toLowerCase();
+    final name = _nameController.text.trim();
     final password = _passwordController.text;
     final passwordConfirmation = _passwordConfirmationController.text;
     final nim = _nimController.text.trim();
-    final ssoPassword = _ssoPasswordController.text;
 
     if (email.isEmpty ||
+        name.isEmpty ||
         password.isEmpty ||
         passwordConfirmation.isEmpty ||
-        nim.isEmpty ||
-        ssoPassword.isEmpty) {
+        nim.isEmpty) {
       setState(() {
         _validationMessage =
-            'Email, password, NIM, dan password SSO wajib diisi.';
+            'Email, nama alumni, password, dan NIM wajib diisi.';
+        _successMessage = null;
       });
       return;
     }
@@ -147,6 +158,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
     if (!email.contains('@')) {
       setState(() {
         _validationMessage = 'Format email belum valid.';
+        _successMessage = null;
       });
       return;
     }
@@ -154,6 +166,7 @@ class _ActivationScreenState extends State<ActivationScreen> {
     if (password.length < 6) {
       setState(() {
         _validationMessage = 'Password JejakGS minimal 6 karakter.';
+        _successMessage = null;
       });
       return;
     }
@@ -161,17 +174,29 @@ class _ActivationScreenState extends State<ActivationScreen> {
     if (password != passwordConfirmation) {
       setState(() {
         _validationMessage = 'Konfirmasi password tidak sama.';
+        _successMessage = null;
       });
       return;
     }
 
-    setState(() => _validationMessage = null);
-    await widget.appState.registerAlumni(
+    setState(() {
+      _validationMessage = null;
+      _successMessage = null;
+    });
+    final success = await widget.appState.registerAlumni(
       email: email,
+      name: name,
       password: password,
       passwordConfirmation: passwordConfirmation,
       nim: nim,
-      ssoPassword: ssoPassword,
     );
+    if (!mounted || !success) {
+      return;
+    }
+
+    setState(() {
+      _successMessage =
+          'Link verifikasi telah dikirim ke $email. Setelah email diverifikasi, silakan kembali ke aplikasi dan login untuk melengkapi profil alumni.';
+    });
   }
 }

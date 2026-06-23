@@ -1,5 +1,19 @@
 import '../models/api_response.dart';
 
+class ApiMultipartFile {
+  const ApiMultipartFile({
+    required this.fieldName,
+    required this.fileName,
+    required this.bytes,
+    this.contentType,
+  });
+
+  final String fieldName;
+  final String fileName;
+  final List<int> bytes;
+  final String? contentType;
+}
+
 abstract class ApiService {
   Future<ApiResponse<T>> get<T>(
     String path, {
@@ -47,6 +61,7 @@ abstract class ApiService {
     required String fileName,
     required List<int> bytes,
     String? contentType,
+    List<ApiMultipartFile>? additionalFiles,
     Map<String, String>? fields,
     bool requiresAuth = true,
     T Function(Object? json)? decoder,

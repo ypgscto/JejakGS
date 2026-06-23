@@ -263,40 +263,55 @@ class AppState extends ChangeNotifier {
     _setBusy(false);
   }
 
-  Future<void> registerAlumni({
+  Future<bool> registerAlumni({
     required String email,
+    required String name,
     required String password,
     required String passwordConfirmation,
     required String nim,
-    required String ssoPassword,
   }) async {
     _setBusy(true);
     _setError(null);
 
     final response = await authService.registerAlumni(
       email: email,
+      name: name,
       password: password,
       passwordConfirmation: passwordConfirmation,
       nim: nim,
-      ssoPassword: ssoPassword,
     );
 
     if (!response.isSuccess) {
       await _handleFailedResponse(response);
       _setBusy(false);
-      return;
+      return false;
     }
 
     final token = await authService.readToken();
     if (token == null || token.trim().isEmpty) {
-      _setFlow(AuthFlowStatus.unauthenticated);
-      _setError('Registrasi berhasil. Silakan login menggunakan email.');
+      _setError(null);
       _setBusy(false);
-      return;
+      return true;
     }
 
     await _loadProfileAfterAuthenticated();
     _setBusy(false);
+    return true;
+  }
+
+  Future<bool> resendVerificationEmail(String email) async {
+    _setBusy(true);
+    _setError(null);
+
+    final response = await authService.resendVerificationEmail(email: email);
+    if (!response.isSuccess) {
+      await _handleFailedResponse(response);
+      _setBusy(false);
+      return false;
+    }
+
+    _setBusy(false);
+    return true;
   }
 
   Future<void> completeProfile(Map<String, dynamic> payload) async {
@@ -312,6 +327,34 @@ class AppState extends ChangeNotifier {
 
     await _loadProfileAfterAuthenticated();
     _setBusy(false);
+  }
+
+  Future<bool> submitVerificationProfile({
+    required Map<String, String> fields,
+    required List<int> diplomaPhotoBytes,
+    required String diplomaPhotoFileName,
+    required List<int> profilePhotoBytes,
+    required String profilePhotoFileName,
+  }) async {
+    _setBusy(true);
+    _setError(null);
+
+    final response = await alumniService.submitVerification(
+      fields: fields,
+      diplomaPhotoBytes: diplomaPhotoBytes,
+      diplomaPhotoFileName: diplomaPhotoFileName,
+      profilePhotoBytes: profilePhotoBytes,
+      profilePhotoFileName: profilePhotoFileName,
+    );
+    if (!response.isSuccess) {
+      await _handleFailedResponse(response);
+      _setBusy(false);
+      return false;
+    }
+
+    await _loadProfileAfterAuthenticated();
+    _setBusy(false);
+    return true;
   }
 
   Future<bool> updateProfilePhoto({
@@ -426,6 +469,10 @@ class AppState extends ChangeNotifier {
   AuthFlowStatus _resolveFlowForProfile(AlumniProfile profile) {
     if (!profile.isComplete) {
       return AuthFlowStatus.completingProfile;
+    }
+
+    if (profile.verificationStatus.state != AlumniVerificationState.verified) {
+      return AuthFlowStatus.waitingVerification;
     }
 
     return AuthFlowStatus.authenticated;

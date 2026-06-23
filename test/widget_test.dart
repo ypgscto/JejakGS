@@ -122,6 +122,7 @@ class _FakeApiService implements ApiService {
     required String fileName,
     required List<int> bytes,
     String? contentType,
+    List<ApiMultipartFile>? additionalFiles,
     Map<String, String>? fields,
     bool requiresAuth = true,
     T Function(Object? json)? decoder,

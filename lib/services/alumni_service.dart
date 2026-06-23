@@ -1,4 +1,5 @@
 import '../models/models.dart';
+import 'api_service.dart';
 import 'base_simawa_service.dart';
 
 class AlumniService extends BaseSimawaService {
@@ -25,6 +26,30 @@ class AlumniService extends BaseSimawaService {
       fieldName: 'profile_photo',
       fileName: fileName,
       bytes: bytes,
+      decoder: asMapOrEmpty,
+    );
+  }
+
+  Future<JsonMapResponse> submitVerification({
+    required Map<String, String> fields,
+    required List<int> diplomaPhotoBytes,
+    required String diplomaPhotoFileName,
+    required List<int> profilePhotoBytes,
+    required String profilePhotoFileName,
+  }) {
+    return api.postMultipart<Map<String, dynamic>>(
+      '/verification/submit',
+      fieldName: 'diploma_photo',
+      fileName: diplomaPhotoFileName,
+      bytes: diplomaPhotoBytes,
+      additionalFiles: [
+        ApiMultipartFile(
+          fieldName: 'profile_photo',
+          fileName: profilePhotoFileName,
+          bytes: profilePhotoBytes,
+        ),
+      ],
+      fields: fields,
       decoder: asMapOrEmpty,
     );
   }

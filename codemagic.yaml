@@ -1,0 +1,44 @@
+workflows:
+  jejakgs-ios:
+    name: JejakGS iOS App Store
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    integrations:
+      app_store_connect: "Codemagic CI"
+
+    environment:
+      flutter: stable
+      xcode: latest
+
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: id.ac.stikesgs.jejakgs
+
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+
+      - name: Flutter analyze
+        script: |
+          flutter analyze
+
+      - name: Set up iOS code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build JejakGS IPA
+        script: |
+          flutter build ipa --release \
+            --build-name=1.0.5 \
+            --build-number=6 \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration

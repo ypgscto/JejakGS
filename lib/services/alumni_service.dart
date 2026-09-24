@@ -32,23 +32,35 @@ class AlumniService extends BaseSimawaService {
 
   Future<JsonMapResponse> submitVerification({
     required Map<String, String> fields,
-    required List<int> diplomaPhotoBytes,
-    required String diplomaPhotoFileName,
-    required List<int> profilePhotoBytes,
-    required String profilePhotoFileName,
+    List<int>? diplomaPhotoBytes,
+    String? diplomaPhotoFileName,
+    List<int>? profilePhotoBytes,
+    String? profilePhotoFileName,
   }) {
-    return api.postMultipart<Map<String, dynamic>>(
-      '/verification/submit',
-      fieldName: 'diploma_photo',
-      fileName: diplomaPhotoFileName,
-      bytes: diplomaPhotoBytes,
-      additionalFiles: [
+    final additionalFiles = <ApiMultipartFile>[];
+    if (profilePhotoBytes != null &&
+        profilePhotoFileName != null &&
+        profilePhotoBytes.isNotEmpty) {
+      additionalFiles.add(
         ApiMultipartFile(
           fieldName: 'profile_photo',
           fileName: profilePhotoFileName,
           bytes: profilePhotoBytes,
         ),
-      ],
+      );
+    }
+
+    final hasDiploma =
+        diplomaPhotoBytes != null &&
+        diplomaPhotoFileName != null &&
+        diplomaPhotoBytes.isNotEmpty;
+
+    return api.postMultipart<Map<String, dynamic>>(
+      '/verification/submit',
+      fieldName: hasDiploma ? 'diploma_photo' : null,
+      fileName: hasDiploma ? diplomaPhotoFileName : null,
+      bytes: hasDiploma ? diplomaPhotoBytes : null,
+      additionalFiles: additionalFiles,
       fields: fields,
       decoder: asMapOrEmpty,
     );

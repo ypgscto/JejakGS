@@ -20,7 +20,10 @@ class AppConfig {
       'APP_ENV',
       defaultValue: 'development',
     );
-    const simawaGsBaseUrl = String.fromEnvironment('SIMAWA_GS_BASE_URL');
+    const simawaGsBaseUrl = String.fromEnvironment(
+      'SIMAWA_GS_BASE_URL',
+      defaultValue: 'https://simawa.stikes.gunungsari.id/api/mobile',
+    );
     const apiTimeoutSeconds = int.fromEnvironment(
       'SIMAWA_GS_TIMEOUT_SECONDS',
       defaultValue: 30,
@@ -46,13 +49,22 @@ class AppConfig {
 
     final normalizedPath = path.startsWith('/') ? path.substring(1) : path;
     final base = Uri.parse('$simawaGsBaseUrl/');
+    final baseSegments = base.pathSegments
+        .where((segment) => segment.isNotEmpty)
+        .toList();
+    final apiIndex = baseSegments.indexOf('api');
+    final pathSegments = normalizedPath
+        .split('/')
+        .where((segment) => segment.trim().isNotEmpty)
+        .toList();
 
     return base.replace(
       pathSegments: [
-        ...base.pathSegments.where((segment) => segment.isNotEmpty),
-        ...normalizedPath
-            .split('/')
-            .where((segment) => segment.trim().isNotEmpty),
+        if (normalizedPath == 'api' || normalizedPath.startsWith('api/'))
+          ...baseSegments.take(apiIndex < 0 ? 0 : apiIndex)
+        else
+          ...baseSegments,
+        ...pathSegments,
       ],
       queryParameters: queryParameters?.map(
         (key, value) => MapEntry(key, value?.toString()),

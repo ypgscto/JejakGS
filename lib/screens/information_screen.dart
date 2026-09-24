@@ -186,7 +186,7 @@ class _InformationScreenState extends State<InformationScreen> {
   }
 }
 
-class _InformationDetail extends StatelessWidget {
+class _InformationDetail extends StatefulWidget {
   const _InformationDetail({
     required this.appState,
     required this.item,
@@ -194,6 +194,68 @@ class _InformationDetail extends StatelessWidget {
   });
 
   final AppState appState;
+  final AnnouncementItem item;
+  final VoidCallback onBack;
+
+  @override
+  State<_InformationDetail> createState() => _InformationDetailState();
+}
+
+class _InformationDetailState extends State<_InformationDetail> {
+  bool _isLoading = true;
+  String? _errorMessage;
+  AnnouncementItem? _detail;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = _detail ?? widget.item;
+
+    if (_isLoading) {
+      return const LoadingState(message: 'Memuat detail informasi...');
+    }
+
+    if (_errorMessage != null && _detail == null) {
+      return ErrorState(
+        title: 'Detail informasi belum dapat dimuat',
+        message: _errorMessage!,
+        onRetry: _load,
+      );
+    }
+
+    return _InformationDetailView(item: item, onBack: widget.onBack);
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    final response = await widget.appState.informationService
+        .getAnnouncementDetail(widget.item.id);
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+      if (response.isSuccess && response.data != null) {
+        _detail = response.data;
+      } else {
+        _errorMessage = response.message ?? 'Detail informasi belum tersedia.';
+        _detail = widget.item;
+      }
+    });
+  }
+}
+
+class _InformationDetailView extends StatelessWidget {
+  const _InformationDetailView({required this.item, required this.onBack});
+
   final AnnouncementItem item;
   final VoidCallback onBack;
 

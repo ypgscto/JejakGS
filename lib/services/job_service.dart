@@ -16,26 +16,30 @@ class JobService extends BaseSimawaService {
     return api.get<JobPost>('/jobs/$id', decoder: JobPost.fromJson);
   }
 
-  Future<ApiResponse<void>> saveJob(String id) {
-    return api.post<void>('/jobs/$id/save', decoder: (_) {});
+  Future<JsonMapResponse> applyJob(String id, {String? coverMessage}) {
+    return api.post<Map<String, dynamic>>(
+      '/jobs/$id/apply',
+      body: {
+        if (coverMessage != null && coverMessage.trim().isNotEmpty)
+          'cover_message': coverMessage.trim(),
+      },
+      decoder: asMapOrEmpty,
+    );
   }
 
   Future<ApiResponse<void>> unsaveJob(String id) {
-    return api.delete<void>('/jobs/$id/save', decoder: (_) {});
+    return Future.value(ApiResponse.success(statusCode: 200));
   }
 
   Future<ApiResponse<List<JobPost>>> getSavedJobs() {
-    return api.get<List<JobPost>>(
-      '/jobs/saved',
-      decoder: (json) => asListOfMaps(json).map(JobPost.fromJson).toList(),
+    return Future.value(
+      ApiResponse.success(statusCode: 200, data: <JobPost>[]),
     );
   }
 
   Future<ApiResponse<List<JobApplication>>> getApplicationHistory() {
-    return api.get<List<JobApplication>>(
-      '/jobs/applications',
-      decoder: (json) =>
-          asListOfMaps(json).map(JobApplication.fromJson).toList(),
+    return Future.value(
+      ApiResponse.success(statusCode: 200, data: <JobApplication>[]),
     );
   }
 }

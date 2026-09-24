@@ -8,6 +8,8 @@ import '../core/constants/app_spacing.dart';
 import '../models/models.dart';
 import '../providers/state/app_state.dart';
 import '../widgets/design_system/design_system.dart';
+import '../forum/forum_safety.dart';
+import 'delete_account_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({required this.appState, super.key});
@@ -37,6 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _websiteController = TextEditingController();
 
   String? _validationMessage;
+  _AccountPage _accountPage = _AccountPage.profile;
 
   @override
   void initState() {
@@ -75,6 +78,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_accountPage == _AccountPage.settings) {
+      return _AccountSettingsView(
+        onBack: () => setState(() => _accountPage = _AccountPage.profile),
+        onDeleteAccount: () =>
+            setState(() => _accountPage = _AccountPage.delete),
+        onBlockedUsers: () =>
+            setState(() => _accountPage = _AccountPage.blockedUsers),
+      );
+    }
+
+    if (_accountPage == _AccountPage.blockedUsers) {
+      return BlockedForumUsersScreen(
+        appState: widget.appState,
+        onBack: () => setState(() => _accountPage = _AccountPage.settings),
+      );
+    }
+
+    if (_accountPage == _AccountPage.delete) {
+      return DeleteAccountScreen(
+        appState: widget.appState,
+        onBack: () => setState(() => _accountPage = _AccountPage.settings),
+      );
+    }
+
     return AnimatedBuilder(
       animation: widget.appState,
       builder: (context, _) {
@@ -87,6 +114,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: 'Profil Alumni',
               subtitle: 'Kelola data pribadi yang tersinkron dengan SIMAWA-GS.',
               leadingIcon: Icons.person_rounded,
+            ),
+            const SizedBox(height: AppSpacing.xxl),
+            const SectionTitle(title: 'Akun'),
+            const SizedBox(height: AppSpacing.md),
+            SecondaryButton(
+              label: 'Pengaturan Akun',
+              icon: Icons.manage_accounts_rounded,
+              fullWidth: true,
+              onPressed: widget.appState.isBusy ? null : _openAccountSettings,
             ),
             const SizedBox(height: AppSpacing.xxl),
             if (profile == null)
@@ -177,6 +213,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  void _openAccountSettings() {
+    setState(() => _accountPage = _AccountPage.settings);
   }
 
   void _fillFromProfile(AlumniProfile? profile) {
@@ -819,6 +859,84 @@ class _SectionGroup extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         child,
       ],
+    );
+  }
+}
+
+enum _AccountPage { profile, settings, delete, blockedUsers }
+
+class _AccountSettingsView extends StatelessWidget {
+  const _AccountSettingsView({
+    required this.onBack,
+    required this.onDeleteAccount,
+    required this.onBlockedUsers,
+  });
+
+  final VoidCallback onBack;
+  final VoidCallback onDeleteAccount;
+  final VoidCallback onBlockedUsers;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+        Row(
+          children: [
+            IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded),
+            ),
+            Expanded(
+              child: Text(
+                'Pengaturan Akun',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        const AppHeader(
+          title: 'Pengaturan Akun',
+          subtitle: 'Kelola akses akun JejakGS Anda.',
+          leadingIcon: Icons.manage_accounts_rounded,
+        ),
+        const SizedBox(height: AppSpacing.xxl),
+        const StatusCard(
+          title: 'Arsip alumni tetap tersimpan',
+          description:
+              'Menghapus akun aplikasi tidak menghapus arsip alumni atau status keanggotaan IKA yang tersimpan di STIKES Gunung Sari.',
+          icon: Icons.warning_amber_rounded,
+          accentColor: AppColors.danger,
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        SecondaryButton(
+          label: 'Alumni Diblokir',
+          icon: Icons.person_off_rounded,
+          fullWidth: true,
+          onPressed: onBlockedUsers,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onDeleteAccount,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: AppColors.white,
+              minimumSize: const Size(0, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+            ),
+            icon: const Icon(Icons.delete_forever_rounded),
+            label: const Text('Hapus Akun JejakGS'),
+          ),
+        ),
+        ],
+      ),
     );
   }
 }

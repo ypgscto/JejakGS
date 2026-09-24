@@ -127,15 +127,17 @@ class _DigitalCardScreenState extends State<DigitalCardScreen> {
       title: 'Kartu Anggota IKA',
       name: card.alumniName,
       photoUrl: card.avatarUrl,
+      qrData: card.qrValue,
       qrCodeUrl: card.qrCodeUrl,
-      badge: card.memberStatus,
+      badge: card.memberStatusLabel ?? card.memberStatus,
       fields: {
         'NIM': card.nim,
         'Prodi': card.programStudy,
         'Angkatan': card.batchYear.toString(),
+        'Tahun lulus': card.graduationYear.toString(),
         'Nomor anggota': card.memberNumber,
-        'Status anggota': card.memberStatus ?? '-',
-        'Jabatan IKA': card.ikaPosition ?? '-',
+        'Status anggota': card.memberStatusLabel ?? card.memberStatus ?? '-',
+        'Tanggal bergabung': _date(card.joinedAt),
       },
     );
   }
@@ -143,6 +145,10 @@ class _DigitalCardScreenState extends State<DigitalCardScreen> {
   String _alumniNumber(AlumniCard card) {
     final value = card.alumniNumber?.trim();
     return value == null || value.isEmpty ? '-' : value;
+  }
+
+  String _date(DateTime? value) {
+    return value?.toLocal().toString().split(' ').first ?? '-';
   }
 
   Future<void> _load() async {

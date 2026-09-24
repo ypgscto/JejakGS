@@ -114,6 +114,7 @@ class IkaStatus {
       state: IkaMembershipState.fromJson(
         json['status'] ??
             json['state'] ??
+            json['ika_membership_status'] ??
             json['membership_status'] ??
             (isBoard ? 'board' : (isMember ? 'active' : value)),
       ),
@@ -122,8 +123,10 @@ class IkaStatus {
       ),
       memberNumber: JsonUtils.string(json, [
         'member_number',
+        'ika_member_number',
         'memberNumber',
         'member_card_number',
+        'ika_member_card_number',
       ]),
       label: JsonUtils.string(json, [
         'label',
@@ -133,7 +136,12 @@ class IkaStatus {
       description: JsonUtils.string(json, ['description']),
       revisionNote: JsonUtils.string(json, ['revision_note', 'revisionNote']),
       rejectionReason: JsonUtils.string(json, ['rejection_reason', 'reason']),
-      registeredAt: JsonUtils.dateTime(json, ['registered_at', 'registeredAt']),
+      registeredAt: JsonUtils.dateTime(json, [
+        'registered_at',
+        'registeredAt',
+        'ika_registered_at',
+        'ika_joined_at',
+      ]),
       expiredAt: JsonUtils.dateTime(json, ['expired_at', 'expiredAt']),
     );
   }

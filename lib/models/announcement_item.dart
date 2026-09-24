@@ -27,7 +27,12 @@ class AnnouncementItem {
     return AnnouncementItem(
       id: JsonUtils.string(json, ['id', 'announcement_id']) ?? '',
       title: JsonUtils.string(json, ['title', 'judul']) ?? '',
-      message: JsonUtils.string(json, ['message', 'body', 'content']),
+      message: JsonUtils.string(json, [
+        'message',
+        'summary',
+        'body',
+        'content',
+      ]),
       category: JsonUtils.string(json, ['category', 'kategori']),
       imageUrl: JsonUtils.string(json, ['image_url', 'imageUrl']),
       isBanner: JsonUtils.boolean(json, ['is_banner', 'banner']),

@@ -102,6 +102,7 @@ class SimawaApiClient implements ApiService {
     String path, {
     Map<String, String>? headers,
     Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? body,
     bool requiresAuth = true,
     T Function(Object? json)? decoder,
   }) {
@@ -110,6 +111,7 @@ class SimawaApiClient implements ApiService {
       path,
       headers: headers,
       queryParameters: queryParameters,
+      body: body,
       requiresAuth: requiresAuth,
       decoder: decoder,
     );
@@ -118,9 +120,9 @@ class SimawaApiClient implements ApiService {
   @override
   Future<ApiResponse<T>> postMultipart<T>(
     String path, {
-    required String fieldName,
-    required String fileName,
-    required List<int> bytes,
+    String? fieldName,
+    String? fileName,
+    List<int>? bytes,
     String? contentType,
     List<ApiMultipartFile>? additionalFiles,
     Map<String, String>? fields,
@@ -140,9 +142,14 @@ class SimawaApiClient implements ApiService {
       }
 
       request.fields.addAll(fields ?? const {});
-      request.files.add(
-        http.MultipartFile.fromBytes(fieldName, bytes, filename: fileName),
-      );
+      if (fieldName != null &&
+          fileName != null &&
+          bytes != null &&
+          bytes.isNotEmpty) {
+        request.files.add(
+          http.MultipartFile.fromBytes(fieldName, bytes, filename: fileName),
+        );
+      }
       for (final file in additionalFiles ?? const <ApiMultipartFile>[]) {
         request.files.add(
           http.MultipartFile.fromBytes(
@@ -218,7 +225,7 @@ class SimawaApiClient implements ApiService {
       case ApiMethod.patch:
         return _httpClient.patch(uri, headers: headers, body: body);
       case ApiMethod.delete:
-        return _httpClient.delete(uri, headers: headers);
+        return _httpClient.delete(uri, headers: headers, body: body);
     }
   }
 

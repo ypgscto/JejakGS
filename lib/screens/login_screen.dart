@@ -99,6 +99,14 @@ class _LoginScreenState extends State<LoginScreen> {
             obscureText: true,
             textInputAction: TextInputAction.done,
           ),
+          if (widget.appState.infoMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.lg),
+              child: _MessageBox(
+                message: widget.appState.infoMessage!,
+                isSuccess: true,
+              ),
+            ),
           if (_validationMessage != null ||
               widget.appState.errorMessage != null)
             Padding(

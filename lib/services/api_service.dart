@@ -51,15 +51,16 @@ abstract class ApiService {
     String path, {
     Map<String, String>? headers,
     Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? body,
     bool requiresAuth = true,
     T Function(Object? json)? decoder,
   });
 
   Future<ApiResponse<T>> postMultipart<T>(
     String path, {
-    required String fieldName,
-    required String fileName,
-    required List<int> bytes,
+    String? fieldName,
+    String? fileName,
+    List<int>? bytes,
     String? contentType,
     List<ApiMultipartFile>? additionalFiles,
     Map<String, String>? fields,

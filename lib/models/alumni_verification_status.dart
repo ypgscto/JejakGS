@@ -14,14 +14,52 @@ enum AlumniVerificationState {
     final normalized = value?.toString().toLowerCase().trim();
     final normalizedCamel = normalized?.replaceAll('_', '');
 
-    if (normalized == 'rejected') {
+    if (normalized == 'rejected' ||
+        normalized == 'ditolak' ||
+        normalized == 'decline') {
       return AlumniVerificationState.declined;
+    }
+
+    if (normalized == 'perlu_perbaikan' ||
+        normalized == 'revision' ||
+        normalized == 'revision_needed') {
+      return AlumniVerificationState.revisionRequired;
+    }
+
+    if (normalized == 'menunggu_verifikasi' || normalized == 'waiting') {
+      return AlumniVerificationState.pending;
+    }
+
+    if (normalized == 'terverifikasi' || normalized == 'approved') {
+      return AlumniVerificationState.verified;
     }
 
     return AlumniVerificationState.values.firstWhere(
       (state) => state.name.toLowerCase() == normalizedCamel,
       orElse: () => AlumniVerificationState.unknown,
     );
+  }
+
+  bool get canResubmitVerification {
+    return this == AlumniVerificationState.revisionRequired ||
+        this == AlumniVerificationState.declined ||
+        this == AlumniVerificationState.rejected ||
+        this == AlumniVerificationState.unverified ||
+        this == AlumniVerificationState.pending;
+  }
+
+  String get defaultLabel {
+    return switch (this) {
+      AlumniVerificationState.verified => 'Terverifikasi',
+      AlumniVerificationState.pending => 'Menunggu Verifikasi',
+      AlumniVerificationState.revisionRequired => 'Perlu Perbaikan',
+      AlumniVerificationState.declined ||
+      AlumniVerificationState.rejected =>
+        'Verifikasi Ditolak',
+      AlumniVerificationState.inactive => 'Akun Nonaktif',
+      AlumniVerificationState.unverified => 'Belum Terverifikasi',
+      AlumniVerificationState.unknown => 'Status belum terverifikasi',
+    };
   }
 }
 
@@ -47,6 +85,30 @@ class AlumniVerificationStatus {
   final String? institutionContactPhone;
   final DateTime? verifiedAt;
   final DateTime? rejectedAt;
+
+  String get displayLabel =>
+      (label != null && label!.trim().isNotEmpty) ? label!.trim() : state.defaultLabel;
+
+  String? get displayNote {
+    final admin = adminNote?.trim();
+    if (admin != null && admin.isNotEmpty) {
+      return admin;
+    }
+
+    final note = notes?.trim();
+    if (note != null && note.isNotEmpty) {
+      return note;
+    }
+
+    return null;
+  }
+
+  bool get canResubmitVerification => state.canResubmitVerification;
+
+  bool get needsCorrection =>
+      state == AlumniVerificationState.revisionRequired ||
+      state == AlumniVerificationState.declined ||
+      state == AlumniVerificationState.rejected;
 
   factory AlumniVerificationStatus.fromJson(Object? value) {
     final json = JsonUtils.asMap(value);

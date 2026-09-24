@@ -37,7 +37,6 @@ class JobListScreen extends StatefulWidget {
 
 class _JobListScreenState extends State<JobListScreen> {
   final _searchController = TextEditingController();
-  final _programController = TextEditingController();
   final _locationController = TextEditingController();
   final _employmentTypeController = TextEditingController();
   String? _category;
@@ -54,7 +53,6 @@ class _JobListScreenState extends State<JobListScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    _programController.dispose();
     _locationController.dispose();
     _employmentTypeController.dispose();
     super.dispose();
@@ -78,22 +76,6 @@ class _JobListScreenState extends State<JobListScreen> {
           title: 'Loker/Karier',
           subtitle: 'Data lowongan berasal dari SIMAWA-GS.',
           leadingIcon: Icons.work_rounded,
-          bottom: Wrap(
-            spacing: AppSpacing.md,
-            runSpacing: AppSpacing.md,
-            children: [
-              SecondaryButton(
-                label: 'Tersimpan',
-                icon: Icons.bookmark_rounded,
-                onPressed: widget.onOpenSaved,
-              ),
-              SecondaryButton(
-                label: 'Riwayat Lamaran',
-                icon: Icons.history_rounded,
-                onPressed: widget.onOpenHistory,
-              ),
-            ],
-          ),
         ),
         const SizedBox(height: AppSpacing.xxl),
         CustomTextField(
@@ -101,12 +83,6 @@ class _JobListScreenState extends State<JobListScreen> {
           controller: _searchController,
           prefixIcon: Icons.search_rounded,
           onChanged: (_) => _load(),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        CustomTextField(
-          label: 'Filter prodi',
-          controller: _programController,
-          prefixIcon: Icons.school_rounded,
         ),
         const SizedBox(height: AppSpacing.md),
         CustomTextField(
@@ -153,11 +129,11 @@ class _JobListScreenState extends State<JobListScreen> {
               company: job.company,
               location: job.location,
               employmentType: job.employmentType,
-              category: job.category,
+              category: job.categoryLabel ?? job.category,
               postedDateLabel: _dateLabel(job.publishedAt, 'Posting'),
               deadlineLabel: _dateLabel(job.deadlineAt, 'Deadline'),
-              isSaved: job.isSaved,
-              onSavePressed: () => _toggleSaved(job),
+              isSaved: job.isApplied,
+              onSavePressed: null,
               onTap: () => widget.onOpenDetail(job.id),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -170,9 +146,7 @@ class _JobListScreenState extends State<JobListScreen> {
     final response = await widget.appState.jobService.getJobs(
       filters: {
         if (_searchController.text.trim().isNotEmpty)
-          'search': _searchController.text.trim(),
-        if (_programController.text.trim().isNotEmpty)
-          'program_study': _programController.text.trim(),
+          'q': _searchController.text.trim(),
         if (_locationController.text.trim().isNotEmpty)
           'location': _locationController.text.trim(),
         if (_employmentTypeController.text.trim().isNotEmpty)
@@ -189,23 +163,6 @@ class _JobListScreenState extends State<JobListScreen> {
         _errorMessage = response.message ?? 'Loker belum tersedia.';
       }
     });
-  }
-
-  Future<void> _toggleSaved(JobPost job) async {
-    final response = job.isSaved
-        ? await widget.appState.jobService.unsaveJob(job.id)
-        : await widget.appState.jobService.saveJob(job.id);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          response.isSuccess
-              ? 'Status simpan lowongan diperbarui.'
-              : response.message ?? 'Gagal menyimpan lowongan.',
-        ),
-      ),
-    );
-    await _load();
   }
 
   String? _dateLabel(DateTime? value, String prefix) {

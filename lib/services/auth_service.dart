@@ -99,6 +99,14 @@ class AuthService extends BaseSimawaService {
     return response;
   }
 
+  Future<JsonMapResponse> deleteAccount({required String password}) {
+    return api.delete<Map<String, dynamic>>(
+      '/auth/account',
+      body: {'password': password},
+      decoder: asMapOrEmpty,
+    );
+  }
+
   Future<ApiResponse<void>> logout() async {
     final response = await api.post<void>('/auth/logout', decoder: (_) {});
     await tokenStorage.clearAccessToken();

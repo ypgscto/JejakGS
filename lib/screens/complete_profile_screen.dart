@@ -53,6 +53,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profile = widget.appState.alumniProfile;
+    final verification = profile?.verificationStatus;
+    final isCorrection = profile?.needsVerificationCorrection == true;
+    final canEditAcademic = profile?.canEditAcademicData ?? true;
+    final hasExistingDiploma = _hasValue(profile?.diplomaPhotoUrl);
+    final hasExistingAvatar = _hasValue(profile?.avatarUrl);
 
     return Scaffold(
       body: SafeArea(
@@ -60,13 +65,31 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           padding: const EdgeInsets.all(AppSpacing.xl),
           children: [
             AppHeader(
-              title: 'Lengkapi Profil',
-              subtitle:
-                  'Kirim data alumni dan berkas pendukung agar admin SIMAWA-GS dapat melakukan verifikasi manual.',
-              leadingIcon: Icons.assignment_ind_rounded,
+              title: isCorrection
+                  ? 'Perbaiki Data Verifikasi'
+                  : 'Lengkapi Profil',
+              subtitle: isCorrection
+                  ? 'Perbarui data dan berkas sesuai catatan admin, lalu kirim ulang untuk diverifikasi.'
+                  : 'Kirim data alumni dan berkas pendukung agar admin SIMAWA-GS dapat melakukan verifikasi manual.',
+              leadingIcon: isCorrection
+                  ? Icons.edit_note_rounded
+                  : Icons.assignment_ind_rounded,
             ),
-            if (profile != null) ...[
+            if (verification?.displayNote != null) ...[
               const SizedBox(height: AppSpacing.xxl),
+              StatusCard(
+                title: verification!.displayLabel,
+                description: verification.displayNote!,
+                icon: Icons.info_rounded,
+                accentColor: isCorrection ? AppColors.danger : AppColors.gold,
+              ),
+            ],
+            if (profile != null) ...[
+              SizedBox(
+                height: verification?.displayNote != null
+                    ? AppSpacing.lg
+                    : AppSpacing.xxl,
+              ),
               AlumniProfileCard(
                 name: profile.name,
                 program: profile.programStudy,
@@ -82,6 +105,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               keyboardType: TextInputType.number,
               prefixIcon: Icons.badge_rounded,
               textInputAction: TextInputAction.next,
+              enabled: canEditAcademic,
             ),
             const SizedBox(height: AppSpacing.lg),
             CustomTextField(
@@ -89,6 +113,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               controller: _nameController,
               prefixIcon: Icons.person_rounded,
               textInputAction: TextInputAction.next,
+              enabled: canEditAcademic,
             ),
             const SizedBox(height: AppSpacing.lg),
             CustomTextField(
@@ -98,6 +123,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               keyboardType: TextInputType.number,
               prefixIcon: Icons.groups_rounded,
               textInputAction: TextInputAction.next,
+              enabled: canEditAcademic,
             ),
             const SizedBox(height: AppSpacing.lg),
             CustomTextField(
@@ -107,13 +133,16 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               keyboardType: TextInputType.number,
               prefixIcon: Icons.school_rounded,
               textInputAction: TextInputAction.next,
+              enabled: canEditAcademic,
             ),
             const SizedBox(height: AppSpacing.lg),
             _FilePickerTile(
               title: 'Foto Ijazah',
               description:
                   _diplomaPhoto?.name ??
-                  'Upload foto ijazah untuk verifikasi admin SIMAWA-GS.',
+                  (hasExistingDiploma
+                      ? 'Foto ijazah sudah ada. Pilih ulang jika ingin diganti.'
+                      : 'Upload foto ijazah untuk verifikasi admin SIMAWA-GS.'),
               icon: Icons.description_rounded,
               onPressed: widget.appState.isBusy
                   ? null
@@ -124,7 +153,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               title: 'Foto Terbaru',
               description:
                   _profilePhoto?.name ??
-                  'Upload foto terbaru alumni untuk dicocokkan oleh admin.',
+                  (hasExistingAvatar
+                      ? 'Foto profil sudah ada. Pilih ulang jika ingin diganti.'
+                      : 'Upload foto terbaru alumni untuk dicocokkan oleh admin.'),
               icon: Icons.photo_camera_rounded,
               onPressed: widget.appState.isBusy
                   ? null
@@ -154,18 +185,33 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               ),
             const SizedBox(height: AppSpacing.xxl),
             PrimaryButton(
-              label: 'Kirim untuk Verifikasi',
+              label: isCorrection
+                  ? 'Kirim Verifikasi Ulang'
+                  : 'Kirim untuk Verifikasi',
               icon: Icons.send_rounded,
               isLoading: widget.appState.isBusy,
               fullWidth: true,
               onPressed: _submit,
             ),
+            if (isCorrection || profile?.isComplete == true) ...[
+              const SizedBox(height: AppSpacing.md),
+              SecondaryButton(
+                label: 'Kembali ke Status',
+                icon: Icons.arrow_back_rounded,
+                fullWidth: true,
+                onPressed: widget.appState.isBusy
+                    ? null
+                    : widget.appState.showWaitingVerification,
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             SecondaryButton(
               label: 'Keluar',
               icon: Icons.logout_rounded,
               fullWidth: true,
-              onPressed: widget.appState.isBusy ? null : widget.appState.logout,
+              onPressed: widget.appState.isBusy
+                  ? null
+                  : widget.appState.logout,
             ),
           ],
         ),
@@ -213,6 +259,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<void> _submit() async {
+    final profile = widget.appState.alumniProfile;
     final nim = _nimController.text.trim();
     final name = _nameController.text.trim();
     final cohortYear = _cohortYearController.text.trim();
@@ -234,35 +281,57 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       return;
     }
 
+    final hasExistingDiploma = _hasValue(profile?.diplomaPhotoUrl);
+    final hasExistingAvatar = _hasValue(profile?.avatarUrl);
     final diplomaPhoto = _diplomaPhoto;
     final profilePhoto = _profilePhoto;
-    if (diplomaPhoto == null || profilePhoto == null) {
+
+    if (diplomaPhoto == null && !hasExistingDiploma) {
       setState(() {
-        _validationMessage = 'Foto ijazah dan foto terbaru wajib diupload.';
+        _validationMessage = 'Foto ijazah wajib diupload.';
         _successMessage = null;
       });
       return;
     }
 
-    final diplomaBytes = await diplomaPhoto.readAsBytes();
-    final profileBytes = await profilePhoto.readAsBytes();
+    if (profilePhoto == null && !hasExistingAvatar) {
+      setState(() {
+        _validationMessage = 'Foto terbaru wajib diupload.';
+        _successMessage = null;
+      });
+      return;
+    }
+
+    final diplomaBytes = diplomaPhoto == null
+        ? null
+        : await diplomaPhoto.readAsBytes();
+    final profileBytes = profilePhoto == null
+        ? null
+        : await profilePhoto.readAsBytes();
 
     setState(() {
       _validationMessage = null;
       _successMessage = null;
     });
+
+    final sourceType = switch (profile?.sourceType) {
+      AlumniSourceType.manualRegister => 'manual_register',
+      AlumniSourceType.siakad => 'siakad',
+      _ => 'manual_register',
+    };
+
     final success = await widget.appState.submitVerificationProfile(
       fields: {
-        'source_type': 'siakad',
+        'source_type': sourceType,
         'nim': nim,
         'name': name,
         'cohort_year': cohortYear,
         'graduation_year': graduationYear,
       },
       diplomaPhotoBytes: diplomaBytes,
-      diplomaPhotoFileName: diplomaPhoto.name,
+      diplomaPhotoFileName: diplomaPhoto?.name,
       profilePhotoBytes: profileBytes,
-      profilePhotoFileName: profilePhoto.name,
+      profilePhotoFileName: profilePhoto?.name,
     );
     if (!mounted || !success) {
       return;
@@ -270,8 +339,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
     setState(() {
       _successMessage =
-          'Data dan berkas berhasil dikirim. Akun alumni akan aktif setelah diverifikasi admin SIMAWA-GS.';
+          'Data dan berkas berhasil dikirim ulang. Akun alumni akan aktif setelah diverifikasi admin SIMAWA-GS.';
     });
+  }
+
+  static bool _hasValue(String? value) {
+    return value != null && value.trim().isNotEmpty;
   }
 }
 

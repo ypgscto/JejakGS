@@ -61,7 +61,9 @@ class AppState extends ChangeNotifier {
   bool _isDashboardLoading = false;
   int _unreadNotificationCount = 0;
   String? _errorMessage;
+  String? _infoMessage;
   String? _dashboardErrorMessage;
+  bool _isDeletingAccount = false;
 
   AuthFlowStatus get authFlowStatus => _authFlowStatus;
 
@@ -76,6 +78,8 @@ class AppState extends ChangeNotifier {
   int get unreadNotificationCount => _unreadNotificationCount;
 
   String? get errorMessage => _errorMessage;
+
+  String? get infoMessage => _infoMessage;
 
   String? get dashboardErrorMessage => _dashboardErrorMessage;
 
@@ -121,6 +125,10 @@ class AppState extends ChangeNotifier {
       return false;
     }
 
+    if (profile?.ikaStatus.canAccessMemberFeatures == true) {
+      return true;
+    }
+
     return _hasAnyRole(profile, const {
       AlumniRole.ikaMember,
       AlumniRole.ikaOfficer,
@@ -164,14 +172,12 @@ class AppState extends ChangeNotifier {
 
     if (state != AlumniVerificationState.verified) {
       return switch (state) {
-        AlumniVerificationState.pending =>
-          'Akun alumni Anda masih menunggu verifikasi. Fitur alumni aktif setelah status verified.',
-        AlumniVerificationState.revisionRequired =>
-          'Akun Anda memerlukan perbaikan data. Silakan perbaiki data profil terlebih dahulu.',
         AlumniVerificationState.declined =>
-          profile?.verificationStatus.adminNote ??
-              profile?.verificationStatus.notes ??
-              'Pengajuan alumni Anda ditolak. Silakan lihat alasan penolakan pada Beranda.',
+          profile?.verificationStatus.displayNote ??
+              'Pengajuan alumni Anda ditolak. Silakan perbaiki data lalu kirim verifikasi ulang.',
+        AlumniVerificationState.revisionRequired =>
+          profile?.verificationStatus.displayNote ??
+              'Akun Anda memerlukan perbaikan data. Silakan perbaiki data profil lalu kirim ulang.',
         AlumniVerificationState.inactive =>
           'Akun alumni Anda sedang inactive sehingga fitur utama belum dapat diakses.',
         AlumniVerificationState.unverified ||
@@ -180,6 +186,8 @@ class AppState extends ChangeNotifier {
         null =>
           'Fitur ini hanya tersedia untuk akun alumni dengan status verified.',
         AlumniVerificationState.verified => '',
+        AlumniVerificationState.pending =>
+          'Akun alumni Anda masih menunggu verifikasi. Fitur alumni aktif setelah status verified.',
       };
     }
 
@@ -213,6 +221,7 @@ class AppState extends ChangeNotifier {
   }) async {
     _setBusy(true);
     _setError(null);
+    _setInfo(null);
 
     final response = await authService.login(
       identifier: identifier,
@@ -331,10 +340,10 @@ class AppState extends ChangeNotifier {
 
   Future<bool> submitVerificationProfile({
     required Map<String, String> fields,
-    required List<int> diplomaPhotoBytes,
-    required String diplomaPhotoFileName,
-    required List<int> profilePhotoBytes,
-    required String profilePhotoFileName,
+    List<int>? diplomaPhotoBytes,
+    String? diplomaPhotoFileName,
+    List<int>? profilePhotoBytes,
+    String? profilePhotoFileName,
   }) async {
     _setBusy(true);
     _setError(null);
@@ -382,11 +391,46 @@ class AppState extends ChangeNotifier {
   Future<void> logout() async {
     _setBusy(true);
     await authService.clearToken();
-    _alumniProfile = null;
-    _dashboardSummary = null;
-    _dashboardErrorMessage = null;
+    _clearAuthenticatedState();
     _setFlow(AuthFlowStatus.unauthenticated);
     _setBusy(false);
+  }
+
+  Future<bool> deleteAccount(String password) async {
+    if (_isDeletingAccount) {
+      return false;
+    }
+
+    _isDeletingAccount = true;
+    _setBusy(true);
+    _setError(null);
+
+    try {
+      final response = await authService.deleteAccount(password: password);
+      if (!response.isSuccess) {
+        if (response.statusCode == 401) {
+          await authService.clearToken();
+          _clearAuthenticatedState();
+          _setInfo(null);
+          _setError('Sesi Anda telah berakhir. Silakan login kembali.');
+          _setFlow(AuthFlowStatus.unauthenticated);
+          return false;
+        }
+
+        _setError(_deleteAccountErrorMessage(response, password));
+        return false;
+      }
+
+      await authService.clearToken();
+      _clearAuthenticatedState();
+      _setError(null);
+      _setInfo('Akun JejakGS Anda berhasil dihapus.');
+      _setFlow(AuthFlowStatus.unauthenticated);
+      return true;
+    } finally {
+      _isDeletingAccount = false;
+      _setBusy(false);
+    }
   }
 
   void showActivation() {
@@ -396,12 +440,18 @@ class AppState extends ChangeNotifier {
 
   void showLogin() {
     _setError(null);
+    _setInfo(null);
     _setFlow(AuthFlowStatus.unauthenticated);
   }
 
   void showCompleteProfile() {
     _setError(null);
     _setFlow(AuthFlowStatus.completingProfile);
+  }
+
+  void showWaitingVerification() {
+    _setError(null);
+    _setFlow(AuthFlowStatus.waitingVerification);
   }
 
   Future<void> refreshProfile() async {
@@ -494,8 +544,7 @@ class AppState extends ChangeNotifier {
   Future<void> _handleFailedResponse(ApiResponse<dynamic> response) async {
     if (response.statusCode == 401) {
       await authService.clearToken();
-      _alumniProfile = null;
-      _dashboardSummary = null;
+      _clearAuthenticatedState();
       _setFlow(AuthFlowStatus.unauthenticated);
       _setError('Sesi tidak valid atau sudah berakhir. Silakan login kembali.');
       return;
@@ -517,6 +566,40 @@ class AppState extends ChangeNotifier {
   void _setError(String? value) {
     _errorMessage = value;
     notifyListeners();
+  }
+
+  void _setInfo(String? value) {
+    _infoMessage = value;
+    notifyListeners();
+  }
+
+  void _clearAuthenticatedState() {
+    _alumniProfile = null;
+    _dashboardSummary = null;
+    _dashboardErrorMessage = null;
+    _unreadNotificationCount = 0;
+  }
+
+  String _deleteAccountErrorMessage(
+    ApiResponse<dynamic> response,
+    String password,
+  ) {
+    if (response.statusCode == 403) {
+      return 'Akun ini tidak dapat dihapus melalui JejakGS.';
+    }
+
+    if (response.statusCode == 422) {
+      final backendMessage = response.message?.trim();
+      if (backendMessage != null &&
+          backendMessage.isNotEmpty &&
+          !backendMessage.contains(password)) {
+        return backendMessage;
+      }
+
+      return 'Password yang Anda masukkan tidak sesuai.';
+    }
+
+    return 'Akun belum dihapus. Periksa koneksi Anda dan coba kembali.';
   }
 
   void _setDashboardLoading(bool value) {

@@ -125,15 +125,26 @@ class AlumniProfile {
         verificationStatus.state == AlumniVerificationState.verified;
   }
 
+  bool get canResubmitVerification =>
+      verificationStatus.state != AlumniVerificationState.verified &&
+      verificationStatus.state != AlumniVerificationState.inactive &&
+      verificationStatus.canResubmitVerification;
+
+  bool get needsVerificationCorrection => verificationStatus.needsCorrection;
+
   bool get canEditAcademicData {
-    return sourceType == AlumniSourceType.manualRegister &&
-        verificationStatus.state == AlumniVerificationState.revisionRequired;
+    if (isAcademicDataLocked) {
+      return false;
+    }
+
+    return verificationStatus.state == AlumniVerificationState.revisionRequired ||
+        verificationStatus.state == AlumniVerificationState.declined ||
+        verificationStatus.state == AlumniVerificationState.rejected ||
+        verificationStatus.state == AlumniVerificationState.unverified ||
+        verificationStatus.state == AlumniVerificationState.pending;
   }
 
-  bool get canUploadDiplomaPhoto {
-    return sourceType == AlumniSourceType.manualRegister &&
-        verificationStatus.state == AlumniVerificationState.revisionRequired;
-  }
+  bool get canUploadDiplomaPhoto => canResubmitVerification || !isComplete;
 
   bool get isComplete {
     return nim.trim().isNotEmpty &&

@@ -73,7 +73,17 @@ class ApiResponseHandler {
 
   static String? _extractStatus(Object? decodedBody) {
     if (decodedBody is Map<String, dynamic>) {
-      return decodedBody['status']?.toString();
+      final status = decodedBody['status'];
+      if (status is bool) {
+        return status ? 'success' : 'error';
+      }
+
+      final success = decodedBody['success'];
+      if (success is bool) {
+        return success ? 'success' : 'error';
+      }
+
+      return status?.toString();
     }
 
     return null;

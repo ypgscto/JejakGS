@@ -27,6 +27,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   JobPost? _job;
+  bool _isApplying = false;
 
   @override
   void initState() {
@@ -83,7 +84,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         StatusCard(
           title: 'Informasi Lowongan',
           description:
-              'Lokasi: ${job.location ?? '-'}\nJenis: ${job.employmentType ?? '-'}\nKategori: ${job.category ?? '-'}\nDeadline: ${_date(job.deadlineAt)}',
+              'Lokasi: ${job.location ?? '-'}\nJenis: ${job.employmentType ?? '-'}\nKategori: ${job.categoryLabel ?? job.category ?? '-'}\nBidang: ${job.jobFieldLabel ?? job.jobField ?? '-'}\nGaji: ${job.salaryRange ?? '-'}\nDeadline: ${_date(job.deadlineAt)}',
           icon: Icons.info_rounded,
           accentColor: AppColors.maroon,
         ),
@@ -106,7 +107,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ],
         const SizedBox(height: AppSpacing.xl),
-        _ApplyActions(job: job),
+        _ApplyActions(
+          job: job,
+          isApplying: _isApplying,
+          onApplyInternal: _applyInternal,
+        ),
       ],
     );
   }
@@ -128,19 +133,65 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   String _date(DateTime? value) {
     return value?.toLocal().toString().split(' ').first ?? '-';
   }
+
+  Future<void> _applyInternal() async {
+    final job = _job;
+    if (job == null || _isApplying) {
+      return;
+    }
+
+    setState(() => _isApplying = true);
+    final response = await widget.appState.jobService.applyJob(job.id);
+    if (!mounted) {
+      return;
+    }
+
+    setState(() => _isApplying = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.isSuccess
+              ? 'Lamaran berhasil dicatat di JejakGS.'
+              : response.message ?? 'Lamaran belum dapat dicatat.',
+        ),
+      ),
+    );
+    if (response.isSuccess) {
+      await _load();
+    }
+  }
 }
 
 class _ApplyActions extends StatelessWidget {
-  const _ApplyActions({required this.job});
+  const _ApplyActions({
+    required this.job,
+    required this.isApplying,
+    required this.onApplyInternal,
+  });
 
   final JobPost job;
+  final bool isApplying;
+  final VoidCallback onApplyInternal;
 
   @override
   Widget build(BuildContext context) {
     final actions = <Widget>[];
+    actions.add(
+      PrimaryButton(
+        label: job.isApplied
+            ? 'Lamaran Sudah Dicatat'
+            : 'Catat Lamaran JejakGS',
+        icon: job.isApplied
+            ? Icons.assignment_turned_in_rounded
+            : Icons.add_task_rounded,
+        fullWidth: true,
+        isLoading: isApplying,
+        onPressed: job.isApplied ? null : onApplyInternal,
+      ),
+    );
     if (_hasValue(job.applicationUrl)) {
       actions.add(
-        PrimaryButton(
+        SecondaryButton(
           label: 'Lamar via Link Resmi',
           icon: Icons.open_in_new_rounded,
           fullWidth: true,

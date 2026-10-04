@@ -1,36 +1,58 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+
+if (!keystorePropertiesFile.exists()) {
+    throw GradleException("File key.properties tidak ditemukan di: ${keystorePropertiesFile.absolutePath}")
+}
+
+keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+
+fun keystoreProp(name: String): String {
+    return keystoreProperties.getProperty(name)
+        ?: throw GradleException("Property '$name' tidak ditemukan di key.properties")
+}
+
 android {
-    namespace = "com.jejakgs.jejak_gs"
+    namespace = "id.ac.stikesgs.jejakgs"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
+	signingConfigs {
+		create("release") {
+			keyAlias = keystoreProp("keyAlias")
+			keyPassword = keystoreProp("keyPassword")
+			storeFile = file(keystoreProp("storeFile"))
+			storePassword = keystoreProp("storePassword")
+		}
+	}
+
+	buildTypes {
+		release {
+			signingConfig = signingConfigs.getByName("release")
+			isMinifyEnabled = false
+			isShrinkResources = false
+		}
+	}
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.jejakgs.jejak_gs"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "id.ac.stikesgs.jejakgs"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-    }
-
-    buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
-        }
     }
 }
 

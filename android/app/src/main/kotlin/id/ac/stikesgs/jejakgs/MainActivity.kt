@@ -1,4 +1,4 @@
-package com.jejakgs.jejak_gs
+package id.ac.stikesgs.jejakgs
 
 import io.flutter.embedding.android.FlutterActivity
 

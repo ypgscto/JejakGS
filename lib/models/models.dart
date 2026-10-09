@@ -1,4 +1,5 @@
 export 'alumni_card.dart';
+export 'alumni_education.dart';
 export 'alumni_event.dart';
 export 'alumni_profile.dart';
 export 'alumni_verification_status.dart';

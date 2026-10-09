@@ -284,6 +284,19 @@ Data Tracer Study dan IKA berasal dari SIMAWA-GS:
 - Status keanggotaan IKA, pendaftaran, kartu IKA, event anggota, pembayaran, voting, forum, dan fitur pengurus harus dimuat dari endpoint IKA SIMAWA-GS.
 - Tidak boleh menggunakan data contoh/dummy pada production screen.
 
+## Riwayat Pendidikan Alumni
+
+Alumni terverifikasi dapat membuka **Profil → Riwayat Pendidikan** untuk melihat beberapa NIM dalam satu akun. Pengajuan NIM tambahan dan pengajuan ulang setelah revisi/penolakan menggunakan bukti ijazah JPG/JPEG/PNG maksimal 5 MB serta penjelasan kepemilikan 20–2000 karakter.
+
+Endpoint SIMAWA-GS, relatif terhadap base URL `/api/mobile`:
+
+- `GET /profile/educations` — pendidikan terhubung dan pengajuan milik akun sendiri.
+- `POST /profile/education-requests` — multipart `nim`, `ownership_note`, dan `diploma_photo`.
+
+Backend wajib sudah menggunakan modul riwayat pendidikan dan menjalankan migrasinya. JejakGS tidak mengganti NIM utama, status verifikasi, atau keanggotaan IKA saat mengajukan pendidikan tambahan. Pemilihan konteks pendidikan untuk kartu, Lacak Teman, dan tracer belum tersedia pada tahap ini; layanan tersebut mempertahankan acuan akun utama.
+
+Model riwayat hanya membaca field yang diperlukan. Path/URL ijazah serta data kontak tidak dimasukkan ke model pendidikan. HTTP 401 menghapus sesi dan kembali ke login; API yang belum tersedia menampilkan error dengan tombol coba lagi. Fixture pengujian berada di folder `test`, bukan layar produksi.
+
 ## Cara Build APK
 
 Build APK debug:

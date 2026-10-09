@@ -396,6 +396,9 @@ class AppState extends ChangeNotifier {
     _setBusy(false);
   }
 
+  Future<void> handleExpiredSession() =>
+      _handleFailedResponse(ApiResponse<void>.failure(statusCode: 401));
+
   Future<bool> deleteAccount(String password) async {
     if (_isDeletingAccount) {
       return false;

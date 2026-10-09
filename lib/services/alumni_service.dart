@@ -9,6 +9,29 @@ class AlumniService extends BaseSimawaService {
     return api.get<Map<String, dynamic>>('/profile', decoder: asMapOrEmpty);
   }
 
+  Future<ApiResponse<AlumniEducationOverview>> getEducationHistory() {
+    return api.get<AlumniEducationOverview>(
+      '/profile/educations',
+      decoder: AlumniEducationOverview.fromJson,
+    );
+  }
+
+  Future<ApiResponse<AlumniEducationRequest>> requestEducation({
+    required String nim,
+    required String ownershipNote,
+    required List<int> diplomaBytes,
+    required String diplomaFileName,
+  }) {
+    return api.postMultipart<AlumniEducationRequest>(
+      '/profile/education-requests',
+      fields: {'nim': nim.trim(), 'ownership_note': ownershipNote.trim()},
+      fieldName: 'diploma_photo',
+      fileName: diplomaFileName,
+      bytes: diplomaBytes,
+      decoder: AlumniEducationRequest.fromJson,
+    );
+  }
+
   Future<JsonMapResponse> updateProfile(Map<String, dynamic> payload) {
     return api.patch<Map<String, dynamic>>(
       '/profile',

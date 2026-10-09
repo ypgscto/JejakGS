@@ -10,6 +10,7 @@ import '../providers/state/app_state.dart';
 import '../widgets/design_system/design_system.dart';
 import '../forum/forum_safety.dart';
 import 'delete_account_screen.dart';
+import 'alumni_education_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({required this.appState, super.key});
@@ -78,6 +79,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_accountPage == _AccountPage.educations) {
+      return AlumniEducationScreen(
+        appState: widget.appState,
+        onBack: () => setState(() => _accountPage = _AccountPage.profile),
+      );
+    }
+
     if (_accountPage == _AccountPage.settings) {
       return _AccountSettingsView(
         onBack: () => setState(() => _accountPage = _AccountPage.profile),
@@ -142,6 +150,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _VerificationSection(profile: profile),
               const SizedBox(height: AppSpacing.lg),
               _SourceSection(profile: profile),
+              if (widget.appState.canAccessBasicAlumniFeatures) ...[
+                const SizedBox(height: AppSpacing.lg),
+                SecondaryButton(
+                  label: 'Riwayat Pendidikan',
+                  icon: Icons.school_rounded,
+                  fullWidth: true,
+                  onPressed: widget.appState.isBusy
+                      ? null
+                      : () => setState(
+                          () => _accountPage = _AccountPage.educations,
+                        ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.xxl),
               _AcademicSection(
                 profile: profile,
@@ -863,7 +884,7 @@ class _SectionGroup extends StatelessWidget {
   }
 }
 
-enum _AccountPage { profile, settings, delete, blockedUsers }
+enum _AccountPage { profile, settings, delete, blockedUsers, educations }
 
 class _AccountSettingsView extends StatelessWidget {
   const _AccountSettingsView({

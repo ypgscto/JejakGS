@@ -328,6 +328,26 @@ Jika ada kesalahan data akademik, hubungi admin kampus untuk perbaikan.
 
 ---
 
+### Riwayat pendidikan untuk alumni dengan beberapa NIM
+
+Jika Anda melanjutkan dari D3 ke pendidikan melalui RPL atau profesi, gunakan satu akun JejakGS. Tidak perlu mendaftar akun baru untuk setiap NIM.
+
+1. Setelah akun utama terverifikasi, buka **Profil → Riwayat Pendidikan**.
+2. Periksa pendidikan yang sudah terhubung. Penanda **Pendidikan utama** menunjukkan acuan layanan akun Anda saat ini.
+3. Pilih **Tambahkan Riwayat Pendidikan**.
+4. Isi NIM pendidikan tambahan dan penjelasan kepemilikan sepanjang 20–2000 karakter.
+5. Pilih foto ijazah JPG/JPEG/PNG dengan ukuran maksimal 5 MB.
+6. Centang pernyataan bahwa NIM dan bukti pendidikan tersebut milik Anda, lalu tekan **Kirim Pengajuan**.
+7. Periksa hasilnya di **Riwayat Pengajuan**. Tarik halaman ke bawah atau tekan tombol perbarui untuk melihat status terbaru.
+
+Program studi, angkatan, tahun lulus, dan nomor alumni berasal dari data SIAKAD yang diperiksa Bagian Alumni. Jika NIM belum tersedia atau sudah terkait akun lain, hubungi Bagian Alumni; jangan membuat akun tambahan atau menghapus akun lama.
+
+Untuk status **Perlu perbaikan** atau **Ditolak**, baca catatan Bagian Alumni, pilih **Perbaiki & Kirim Ulang**, lengkapi penjelasan dan pilih bukti ijazah terbaru, lalu kirim pengajuan ulang. NIM pada pengajuan yang diperbaiki tetap sama. Jika perlu mengajukan NIM berbeda, kembali ke daftar dan buat pengajuan baru.
+
+Persetujuan menambahkan riwayat pendidikan pada satu akun. Pendidikan utama, kartu, Lacak Teman, tracer, dan keanggotaan IKA tetap menggunakan acuan akun utama pada versi ini. Pengajuan tambahan yang masih menunggu atau ditolak tidak membatalkan verifikasi akun utama.
+
+Foto ijazah hanya digunakan untuk pemeriksaan admin dan tidak tampil pada profil publik, Lacak Teman, atau kartu digital.
+
 ## 15. Layanan IKA
 
 **IKA** adalah Ikatan Alumni. Layanan ini ada di tab **IKA**.
